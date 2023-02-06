@@ -21,6 +21,23 @@ Data types used throughout the Raknet protocol are listed below:
     \item \textit{Magic} - The magic (or offline message data) is a sequence of bytes unique to Raknet that identifies its packets.
     It is equal to \\
     \texttt{0x00ffff00fefefefefdfdfdfd12345678}.
+
+    \item \textit{Address} - Either an IPv4 or IPv6 address.
+        The address is prefixed with a single byte specifying whether the address is IPv4 (0x04) or IPv6 (0x06).
+        In case of an IPv4 address, this prefix is followed by four bytes for the IP's four octets.
+        After which the port is encoded in an unsigned short. 
+
+        In other words: \\
+        \texttt{0x04(1);octets(4);port(2);}
+
+        An IPv6 address starts with an unsigned short for the IP family (AF\_INET6). 
+        This is then directly followed by another unsigned short for the port. 
+        Then four bytes of flow information, and 16 bytes for the octets.
+        Lastly, there are four bytes specifying scope information.
+
+        The IP family must always equal AF\_INET (0x17), the flow and scope information can be set to 0.
+        An IPv6 address is then encoded like this:\\
+        \texttt{0x06(1);0x17(2);port(2);0x00(4);octets(16);0x00(4);}
 \end{enumerate}
 
 \section{Packets}\label{sec:raknet-packets}
@@ -32,7 +49,7 @@ This means that the client sends an unconnected ping to each of the servers save
 This packet has the following format:
 
 \packet{unconnected-ping}{Unconnected Ping (0x01)}{
-    Time & long & Timestamp of when this ping was sent. \\
+    Timestamp & long & Timestamp of when this ping was sent. \\
     \hline
     Magic & 16 bytes & Raknet offline message data. \\
     \hline
@@ -50,7 +67,7 @@ An unconnected pong packet should be sent in response to the previously mentione
 This packet contains the data to be displayed in the server menu.
 
 \packet{unconnected-pong}{Unconnected Pong (0x1c)}{
-    Time & long & Timestamp of when this pong was sent. \\
+    Timestamp & long & Timestamp of when this pong was sent. \\
     \hline
     Server GUID & long & Randomly generated server GUID. More info below. \\
     \hline
@@ -81,7 +98,7 @@ This is the first packet that is sent when the client joins the server.
     \hline
     Protocol version & long & Currently 11. \\
     \hline
-    MTU & Padding & The MTU (Maximum Transfer Unit). More info below. \\
+    MTU & padding & The MTU (Maximum Transfer Unit). More info below. \\
 }
 
 \textit{Protocol version} - This is the version of Raknet that the client is using.
@@ -110,6 +127,8 @@ This will cause the client to disconnect, saying either the client or server is 
 
 \subsection{Open Connection Reply 1}\label{subsec:open-connection-reply1}
 
+Sent by the server, in response to open connection request, if the Raknet protocol matches.
+
 \packet{open-connection-reply1}{Open Connection Reply 1 (0x06)}{
     Magic & 16 bytes & \\
     \hline
@@ -118,4 +137,76 @@ This will cause the client to disconnect, saying either the client or server is 
     Security enabled & boolean & Unknown what this does, it must be disabled to continue connecting. \\
     \hline
     MTU & short & MTU determined using the request packet (\ref{subsec:open-connection-request1}). \\
+}
+
+\subsection{Open Connection Request 2}
+
+Sent by the client, in response to open connection reply 1.
+
+\packet{open-connection-request2}{Open Connection Request 2 (0x07)}{
+    Magic & 16 bytes & \\
+    \hline
+    Server address & address & \\
+    \hline
+    MTU & short & MTU previously sent in open connection reply 1 (\ref{subsec:open-connection-reply1}). \\
+    \hline
+    Client GUID & long & \\
+}
+
+\subsection{Open Connection Reply 2}
+
+Sent by the server, in response to open connection request 2.
+
+\packet{open-connection-reply2}{Open Connection Reply 2 (0x08)}{
+    Magic & 16 bytes & \\
+    \hline
+    Server GUID & long &  \\
+    \hline
+    Client address & address & The client's IP address \\
+    \hline
+    MTU & short & \\
+    \hline
+    Encryption enabled & boolean & \\
+}
+
+\subsection{Connection Request}
+
+Sent by the client, in response to open connection reply 2.
+Ideally, the user's server-side session should be created at this point.
+Packets received after this are encapsulated in a frame batch, this requires keeping track of session-specific data.
+
+\packet{connection-request}{Connection Request (0x09)}{
+    Client GUID & long & \\
+    \hline
+    Timestamp & long & \\ 
+}
+
+\subsection{Connection Request Accepted}
+
+Sent by the server, in response to a connection request packet.
+
+\packet{connection-request-accepted}{Connection Request Accepted (0x10)}{
+    Client address & address & \\
+    \hline
+    System index & short & Unknown what this does. 0 works as a value. \\
+    \hline
+    Internal IDs & 10x address & Unknown what these do. 255.255.255.255:19132 works as a value. \\
+    \hline
+    Request timestamp & long & Timestamp from the connection request. \\ 
+    \hline
+    Timestamp & long & Current time. \\
+}
+
+\subsection{New Incoming Connection}
+
+\packet{new-incoming-connection}{New Incoming Connection (0x13)}{
+    Server address & address & \\
+    \hline
+    Internal address & address & Unknown what this does. \\
+}
+
+\subsection{Disconnect}
+
+\packet{disconnect}{Disconnect (0x15)}{
+    This packet has no data. \\
 }
