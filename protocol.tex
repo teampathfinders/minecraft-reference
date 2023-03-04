@@ -61,7 +61,7 @@ The first packet sent by the client after initiating the Raknet connection is th
 It contains most of the information that uniquely identifies each player.
 
 \packet{login}{Login (0x01)}{
-    Protocol version & uint32le & The version of the Minecraft protocol. This has been replaced by the one in Request Network Settings (\ref{subsec:request-network-settings}) \\
+    Protocol version & uint32be & The version of the Minecraft protocol. This has been replaced by the one in Request Network Settings (\ref{subsec:request-network-settings}) \\
     \hline
     Chain data & String & The chain is a JSON-encoded array of 1 or 3 JSON web tokens. More info below. \\
     \hline
@@ -97,5 +97,44 @@ The user data token is the largest of the four and contains mostly misc settings
 There is too much information to include it in this document. The token can easily be decoded by viewing it on a site like \url{https://jwt.io}.
 This token is self-signed and should therefore not be seen as secure.
 
+\subsection{Play Status}\label{subsec:play-status}
+
+The Play Status packet is sent by the server to notify the client about a login status update.
+
+\packet{play-status}{Play Status (0x02)}{
+    Status & uint32be & The current status of the connection. \\
+}
+
+There are a few different statuses
+\begin{itemize}
+    \item \textit{LoginSuccess} \\
+        Sent by the server to tell the client about a successful login. This is generally sent after succesfully decrypting an encrypted Client to Server Handshake (\ref{subsec:client-to-server-handshake}) packet.
+
+    \item \textit{FailedClient} \\
+        This status should be sent when the client is running an older version of the game than the server.
+        It displays "Could not connect: Outdated Client!"
+
+    \item \textit{FailedServer} \\
+        This status should be sent when the server is running an older version fo the game than the client.
+        It displays "Could not connect: Outdated Server!"
+
+    \item \textit{PlayerSpawn} \\
+        Sent at the end of the login sequence to make the player physically spawn in-game.
+
+    \item \textit{FailedInvalidTenant} \\
+        Displays "Unable to connect. You do not have access to this world."
+
+    \item \textit{FailedVanillaEdu} \\
+        Displays "The server is not running Minecraft: Education Edition. Failed to connect."
+
+    \item \textit{FailedIncompatible} \\
+        Displays "The server is running an incompatible edition of Minecraft. Failed to connect."
+    
+    \item \textit{FailedServerFull} \\
+        Displays "Wow this server is popular! Check back later to see if space opens up. Server Full."
+
+    \item \textit{FailedEditorToVanillaMismatch} \\
+        Displays "The server is not in editor mode. Failed to connect."
+\end{itemize}
 
 \section{Skin format}\label{sec:protocol-skin}
