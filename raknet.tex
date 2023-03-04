@@ -11,7 +11,7 @@ reducing overhead. Sign is not known in most cases, use what is most logical.
 Full documentation for this protocol is available at \url{http://jenkinssoftware.com}.
 Its source is available at \url{https://github.com/facebookarchive/raknet}.
 
-\section{Special data types}\label{sec:raknet-types}
+\section{Custom data types}\label{sec:raknet-types}
 
 Data types used throughout the Raknet protocol are listed below:
 \begin{enumerate}
@@ -138,7 +138,7 @@ This is the first packet that is sent when the client joins the server.
 If this version does not match your own, send an incompatible protocol packet in return
 (\ref{subsec:incompatible-protocol}). 
 
-\textit{MTU} - The MTU is the maximum size a packet can be before any router auint64 the network
+\textit{MTU} - The MTU is the maximum size a packet can be before any router on the network
 starts dropping packets. It is the maximum size of a packet that Raknet will generate.
 This MTU can be calculated by adding 28 to size of this packet. This is to account for overhead of the UDP header.
 

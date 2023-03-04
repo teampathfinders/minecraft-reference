@@ -1,0 +1,62 @@
+\chapter{Protocol}\label{chap:protocol}
+
+\section{Custom data types}\label{sec:protocol-types}
+
+Unlike the Raknet protocol, every number used in the Bedrock protocol is in little endian format.
+Besides the standard integer types, the protocol uses the following custom types:
+\begin{enumerate}
+    \item \textit{Variable size integers} - The majority of numbers in the protocol are represented using variable size integers.
+        As the name suggests, these can grow when needed.
+        There are a few different types: varuint32, varint32, varuint64 and varint64.
+    \item \textit{String} - Unlike Raknet's String type, Minecraft prefixes the string data with a varuint32.
+    \item 
+\end{enumerate}
+
+\section{Header}\label{sec:protocol-header}
+
+Every protocol packet is preceded by a header containing info about the packet.
+This header contains the ID of the packet and the sender/target subclients.
+The client or server can specify a subclient in order to send a packet to a specific player during split screen play.
+Usually these IDs are set to 0 when there is no split screen.
+
+The complete header is encoded in a single varuint32.
+The first 10 bytes are the packet ID, the next 2 the sender and the last 2 are the target.
+
+\section{Packets}\label{sec:protocol-packets}
+
+\subsection{Request Network Settings}\label{subsec:request-network-settings}
+
+Sent by the client to request network settings.
+This is the first protocol packet sent by the client and is required in order to enable compression.
+
+\packet{request-network-settings}{Request Network Settings (0xc1)}{
+    Protocol version & uint32le & The version of the Minecraft protocol. \\
+}
+
+\subsection{Network Settings}\label{subsec:network-settings}
+
+The network settings packet is sent in response to Request Network Settings (\ref{subsec:request-network-settings}) to tell
+the client about the settings the server is using.
+
+\packet{network-settings}{Network Settings (0x8f)}{
+    Compression threshold & uint16le & Maximum allowed size of a packet before it should be compressed.
+        This can be set to 0 to disable compression or to 1 to enable compression for all packets regardless of size. \\
+    \hline
+    Compression algorithm & uint16le & The compression algorithm to use for packet compression.
+        Minecraft currently supports two algorithms: A value of 0 for Deflate and 1 for Snappy. \\
+    \hline
+    Throttling enabled & boolean & Enabling this allows the client to tick fewer players, improving performance. \\
+    \hline
+    Throttle threshold & uint8 & Minimum amount of players required before starting to throttle. \\
+    \hline
+    Throttle scalar & f32le & Strength of the throttling. This is probably a scale from 0.0 to 1.0? \\
+}   
+
+\subsection{Login}\label{subsec:login}
+
+The first packet sent by the client after initiating the Raknet connection is the Login packet.
+It contains most of the information that uniquely identifies each player.
+
+\packet{login}{Login (0x01)}{
+    Protocol version & int32be & The version of the Minecraft protocol. This has been replaced by the one in RequestNetworkSettings (\ref{subsec:request-network-settings}) \\
+}
