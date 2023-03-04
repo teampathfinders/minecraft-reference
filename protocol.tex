@@ -33,6 +33,9 @@ This is the first protocol packet sent by the client and is required in order to
     Protocol version & uint32le & The version of the Minecraft protocol. \\
 }
 
+In case of an incompatible protocol version, a Play Status (\ref{subsec:play-status}) packet with a status of
+FailedClient or FailedServer should be sent.
+
 \subsection{Network Settings}\label{subsec:network-settings}
 
 The network settings packet is sent in response to Request Network Settings (\ref{subsec:request-network-settings}) to tell
@@ -58,5 +61,41 @@ The first packet sent by the client after initiating the Raknet connection is th
 It contains most of the information that uniquely identifies each player.
 
 \packet{login}{Login (0x01)}{
-    Protocol version & int32be & The version of the Minecraft protocol. This has been replaced by the one in RequestNetworkSettings (\ref{subsec:request-network-settings}) \\
+    Protocol version & uint32le & The version of the Minecraft protocol. This has been replaced by the one in Request Network Settings (\ref{subsec:request-network-settings}) \\
+    \hline
+    Chain data & String & The chain is a JSON-encoded array of 1 or 3 JSON web tokens. More info below. \\
+    \hline
+    User data & String & A self-signed JSON web token containing info such as the user's skin. \\
 }
+
+\subsubsection{Login chain}\label{subsubsec:login-chain}
+
+The chain is a JSON-encoded array of one or three JSON web tokens.
+If the user is not authenticated with Microsoft services, this chain contains one token.
+It however seems that this case never occurs because Minecraft now requires an Xbox account to join servers.
+
+In case of three tokens, the first token contains a public key in the x5u header.
+This public key should be used to verify the token's signature.
+It contains an identityPublicKey field which gives the public key of the second token in the chain.
+As the second token is signed by Mojang in order to prevent tampering, 
+this token's public key should be equal to Mojang's public key: \\
+
+\noindent
+\texttt{MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83\\ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuK\\dm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V}
+\\
+
+\noindent
+This token holds another \texttt{identityPublicKey} field that contains the public key for the third token.
+
+The third token contains an \texttt{extraData} field, that holds the client's identity data,
+such as the \texttt{XUID}, \texttt{identity} and \texttt{displayName}.
+Besides the identity data, there is once again an identityPublicKey field that contains the client's actual public key.
+
+\subsubsection{User data}\label{subsubsec:user-data}
+
+The user data token is the largest of the four and contains mostly misc settings and the client's skin.
+There is too much information to include it in this document. The token can easily be decoded by viewing it on a site like \url{https://jwt.io}.
+This token is self-signed and should therefore not be seen as secure.
+
+
+\section{Skin format}\label{sec:protocol-skin}
